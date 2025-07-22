@@ -1,0 +1,39 @@
+// main.c
+#include "raylib.h"
+#include "sliders.h"
+
+#include "sliders.h"
+
+float volume = 0.5f;
+
+void UpdateDrawFrame(void) {
+    BeginDrawing();
+    ClearBackground(RAYWHITE);
+
+    Rectangle sliderRect = { 100, 100, 200, 20 };
+    volume = GuiSlider(sliderRect, volume, 0.0f, 1.0f, false);
+
+    DrawText(TextFormat("Volume: %.2f", volume), 100, 130, 20, BLACK);
+
+    EndDrawing();
+}
+
+int main(void)
+{
+    // Ініціалізація вікна
+    const int screenWidth = 800;
+    const int screenHeight = 600;
+    InitWindow(screenWidth, screenHeight, "Raylib Button Example");
+
+    // Головний цикл програми
+    while (!WindowShouldClose())
+    {
+
+        UpdateDrawFrame();
+    }
+
+    // Закриття вікна
+    CloseWindow();
+
+    return 0;
+}

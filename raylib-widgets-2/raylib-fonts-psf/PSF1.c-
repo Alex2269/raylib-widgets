@@ -1,0 +1,115 @@
+// main-PSF1.c
+#include "raylib.h"   // Підключення бібліотеки raylib для роботи з графікою
+#include <stdio.h>    // Для роботи з файлами та вводу/виводу
+#include <stdlib.h>   // Для функції malloc і exit
+
+// Магічні числа формату PSF1 для перевірки валідності файлу
+#define PSF1_MAGIC0 0x36
+#define PSF1_MAGIC1 0x04
+
+// Структура заголовка PSF1 шрифту (3 байти)
+typedef struct {
+    unsigned char magic[2];  // Магічні числа формату PSF1 (0x36, 0x04)
+    unsigned char mode;      // Режим (інформація про кількість символів)
+    unsigned char charsize;  // Розмір одного символу в байтах (висота символу)
+} PSF1_Header;
+
+// Структура для зберігання завантаженого шрифту
+typedef struct {
+    int width;              // Ширина символу в пікселях (для PSF1 зазвичай 8)
+    int height;             // Висота символу в пікселях (charsize з заголовка)
+    int charcount;          // Кількість символів у шрифті (256 або 512)
+    unsigned char* glyphBuffer; // Вказівник на буфер з усіма гліфами (піксельні дані символів)
+} PSF1_Font;
+
+// Функція завантаження PSF1 шрифту з файлу
+PSF1_Font LoadPSF1Font(const char* filename) {
+    FILE* f = fopen(filename, "rb");  // Відкриваємо файл у двійковому режимі
+    if (!f) {
+        printf("Failed to open font file\n");  // Якщо файл не відкрився, виводимо помилку
+        exit(1);  // Завершуємо програму з кодом помилки
+    }
+
+    PSF1_Header header;
+    fread(&header, sizeof(PSF1_Header), 1, f);  // Читаємо заголовок шрифту
+
+    // Перевіряємо магічні числа, щоб впевнитися, що це PSF1 шрифт
+    if (header.magic[0] != PSF1_MAGIC0 || header.magic[1] != PSF1_MAGIC1) {
+        printf("Not a valid PSF1 font\n");  // Якщо магія не співпадає, виводимо помилку
+        fclose(f);  // Закриваємо файл
+        exit(1);    // Завершуємо програму
+    }
+
+    // Визначаємо кількість символів: якщо встановлений біт 0x01 у mode, то 512 символів, інакше 256
+    int charcount = (header.mode & 0x01) ? 512 : 256;
+    int glyphsize = header.charsize;  // Розмір одного символу в байтах (висота символу)
+
+    // Виділяємо пам'ять під всі символи (charcount * висота символу)
+    unsigned char* glyphBuffer = (unsigned char*)malloc(charcount * glyphsize);
+    fread(glyphBuffer, glyphsize, charcount, f);  // Читаємо гліфи з файлу
+    fclose(f);  // Закриваємо файл
+
+    // Заповнюємо структуру шрифту
+    PSF1_Font font = {8, header.charsize, charcount, glyphBuffer};
+    return font;  // Повертаємо завантажений шрифт
+}
+
+// Функція для звільнення пам'яті, виділеної під шрифт
+void UnloadPSF1Font(PSF1_Font font) {
+    free(font.glyphBuffer);  // Звільняємо буфер гліфів
+}
+
+// Функція для малювання одного символу шрифту PSF1 у вказаній позиції (x, y)
+void DrawPSF1Char(PSF1_Font font, int x, int y, int c, Color color) {
+    // Перевірка, чи символ у межах кількості символів шрифту
+    if (c < 0 || c >= font.charcount) return;
+
+    // Проходимо по кожному рядку символу (висота символу)
+    for (int row = 0; row < font.height; row++) {
+        // Отримуємо байт, що відповідає рядку символу (біти - пікселі)
+        unsigned char bits = font.glyphBuffer[c * font.height + row];
+        // Проходимо по кожному біту (пікселю) в рядку (ширина символу)
+        for (int col = 0; col < font.width; col++) {
+            // Перевіряємо, чи встановлений відповідний біт (піксель увімкнений)
+            if (bits & (0x80 >> col)) {
+                DrawPixel(x + col, y + row, color);  // Малюємо піксель кольором color
+            }
+        }
+    }
+}
+
+// Функція для малювання рядка тексту шрифтом PSF1
+void DrawPSF1Text(PSF1_Font font, int x, int y, const char* text, Color color) {
+    int xpos = x;  // Початкова позиція по X для тексту
+    while (*text) {  // Поки не кінець рядка
+        DrawPSF1Char(font, xpos, y, (unsigned char)*text, color);  // Малюємо символ
+        xpos += font.width;  // Зсуваємо позицію вправо на ширину символу
+        text++;  // Переходимо до наступного символу
+    }
+}
+
+int main(void) {
+    const int screenWidth = 800;   // Ширина вікна
+    const int screenHeight = 450;  // Висота вікна
+
+    InitWindow(screenWidth, screenHeight, "PSF Font with raylib");  // Ініціалізація вікна raylib
+
+    PSF1_Font font = LoadPSF1Font("Uni3-Terminus16.psf");  // Завантаження PSF1 шрифту з файлу font.psf
+
+    SetTargetFPS(60);  // Встановлюємо цільові 60 кадрів в секунду
+
+    while (!WindowShouldClose()) {  // Основний цикл програми, поки вікно не закрито
+        BeginDrawing();  // Починаємо малювання кадру
+        ClearBackground(RAYWHITE);  // Очищаємо фон білим кольором
+
+        DrawPSF1Text(font, 20, 20, "Привіт, друже!", BLACK);  // Малюємо текст шрифтом PSF1 чорним кольором
+
+        EndDrawing();  // Завершуємо малювання кадру
+    }
+
+    UnloadPSF1Font(font);  // Звільняємо пам'ять, виділену під шрифт
+    CloseWindow();         // Закриваємо вікно та звільняємо ресурси raylib
+
+    return 0;  // Завершення програми
+}
+
