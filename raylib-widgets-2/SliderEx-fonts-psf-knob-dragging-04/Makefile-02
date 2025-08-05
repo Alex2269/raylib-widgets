@@ -1,0 +1,139 @@
+# Run make SILENT=0 for full print, SILENT=1 for silent mode (default)
+SILENT ?= 1
+ifeq (1,$(SILENT))
+.SILENT:
+endif
+
+# --- Configuration Section ---
+
+TARGET = application
+
+# Debug build? (0: Release, 1: Debug)
+DEBUG = 0
+
+# Optimization and debug flags
+ifeq ($(DEBUG), 1)
+OPT = -Og -g3
+else
+OPT = -O2
+endif
+OPT += -g0 # Debug output for peripheral registers
+
+# Build paths
+BUILD_DIR = build
+BUILD_ASM_DIR = $(BUILD_DIR)/asm
+BUILD_CC_DIR  = $(BUILD_DIR)/c
+BUILD_CPP_DIR = $(BUILD_DIR)/cpp
+
+# --- Source and Path Discovery ---
+
+ROOT_DIR = .
+
+# Use a consistent, cross-platform approach for finding files
+# This uses find command, which is standard on Unix and can be installed on Windows
+C_SOURCES = $(shell find $(ROOT_DIR) -name '*.c')
+CPP_SOURCES = $(shell find $(ROOT_DIR) -name '*.cpp')
+ASM_SOURCES = $(shell find $(ROOT_DIR) -name '*.s')
+
+# C and C++ includes
+INCDIR = .
+INCDIR += RS-232
+INCDIR += gui
+INCDIR += psf
+INCDIR += slider_widget # Added missing include path
+
+C_INC = $(foreach dir, $(INCDIR), -I$(dir))
+
+# --- Toolchain and Flags ---
+
+PREFIX =
+# Set compiler paths and tools
+CC = $(PREFIX)gcc
+CXX = $(PREFIX)g++
+AS = $(PREFIX)gcc -x assembler-with-cpp
+CP = $(PREFIX)objcopy
+SZ = $(PREFIX)size
+
+HEX = $(CP) -O ihex
+BIN = $(CP) -O binary -S
+
+# Compile flags
+WARNINGS := -Wall -Wextra
+GCCFLAGS += -O0 -g $(WARNINGS) -MMD -MP # -MMD for dependencies
+CFLAGS  = $(C_INC) $(OPT) -std=gnu17 $(GCCFLAGS)
+CPPFLAGS = $(C_INC) $(OPT) -std=gnu++17 $(GCCFLAGS)
+CFLAGS += -Wno-implicit-function-declaration
+
+# Libraries
+LIBS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+
+# LDFLAGS setup
+LDFLAGS = $(LIBS)
+
+# --- Build Rules ---
+
+# Default action: build all
+.PHONY: all
+all: $(BUILD_DIR)/$(TARGET).elf $(BUILD_DIR)/$(TARGET).hex $(BUILD_DIR)/$(TARGET).bin
+
+## shell color beg ##
+green=\033[0;32m
+YELLOW=\033[1;33m
+NC=\033[0m
+## shell color end ##
+
+# Object files
+OBJECTS = $(patsubst $(ROOT_DIR)/%.c,$(BUILD_CC_DIR)/%.o,$(C_SOURCES))
+OBJECTS += $(patsubst $(ROOT_DIR)/%.cpp,$(BUILD_CPP_DIR)/%.o,$(CPP_SOURCES))
+OBJECTS += $(patsubst $(ROOT_DIR)/%.s,$(BUILD_ASM_DIR)/%.o,$(ASM_SOURCES))
+
+# Rule for C compilation
+$(BUILD_CC_DIR)/%.o: %.c | $(BUILD_CC_DIR)
+	@echo "${green}[compile:]${YELLOW} $< ${NC}"
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Rule for C++ compilation
+$(BUILD_CPP_DIR)/%.o: %.cpp | $(BUILD_CPP_DIR)
+	@echo "${green}[compile:]${YELLOW} $< ${NC}"
+	$(CXX) $(CPPFLAGS) -c $< -o $@
+
+# Rule for ASM compilation
+$(BUILD_ASM_DIR)/%.o: %.s | $(BUILD_ASM_DIR)
+	@echo "${green}[compile:]${YELLOW} $< ${NC}"
+	$(AS) $(CFLAGS) -c $< -o $@
+
+# Rule for linking
+$(BUILD_DIR)/$(TARGET).elf: $(OBJECTS) | $(BUILD_DIR)
+	@echo "${green}[linking:]${YELLOW} $@ ${NC}"
+	$(CC) $(OBJECTS) $(LDFLAGS) $(LIBS) -o $@
+	@echo "${green}[size:]${YELLOW} ${TARGET}.elf ${NC}"
+	$(SZ) $@ --format=Berkeley
+
+# Rule for HEX file creation
+$(BUILD_DIR)/$(TARGET).hex: $(BUILD_DIR)/$(TARGET).elf
+	@echo "${green}[hex:]${YELLOW} $@ ${NC}"
+	$(HEX) $< $@
+
+# Rule for BIN file creation
+$(BUILD_DIR)/$(TARGET).bin: $(BUILD_DIR)/$(TARGET).elf
+	@echo "${green}[bin:]${YELLOW} $@ ${NC}"
+	$(BIN) $< $@
+
+# Create directories
+$(BUILD_CC_DIR):
+	mkdir -p $@
+$(BUILD_CPP_DIR):
+	mkdir -p $@
+$(BUILD_ASM_DIR):
+	mkdir -p $@
+$(BUILD_DIR):
+	mkdir -p $@
+
+# Clean rule
+.PHONY: clean
+clean:
+	-rm -rf $(BUILD_DIR)
+	-rm -f $(TARGET).elf
+
+# Include dependency files created by the compiler
+-include $(OBJECTS:.o=.d)
