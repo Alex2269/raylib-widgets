@@ -50,7 +50,7 @@ void DrawVerticalScale(int channel, float scale, float offset_y, Rectangle area,
         // Обчислюємо Y позицію для мітки, масштабуючи відносно offset_y
         float y = centerY + (val - offset_y) * scale;
 
-        // Інвертований напрямок шкали по осі Y
+        // Інвертований напрямок шкали по осі Y (числа зростають вниз)
         // float y = centerY - (val - offset_y) * scale;
 
         // Якщо позиція виходить за межі області малювання - пропускаємо
