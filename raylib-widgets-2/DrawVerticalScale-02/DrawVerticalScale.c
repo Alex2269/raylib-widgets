@@ -70,7 +70,7 @@ void DrawVerticalScale(int channel, float scale, float offset_y, Rectangle area,
         DrawLine(x_end, y, x_end + 10, y, color);
 
         // Малюємо текст праворуч від риски, відцентрований по горизонталі відносно риски
-        DrawPSFText(font, x_end + 10 + spacing - text_width / 2, y - font.height / 2, label, spacing, color);
+        DrawPSFText(font, x_end + 25 + spacing - text_width / 2, y - font.height / 2, label, spacing, color);
     }
 }
 
