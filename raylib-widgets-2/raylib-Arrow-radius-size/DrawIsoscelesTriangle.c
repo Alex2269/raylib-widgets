@@ -57,7 +57,7 @@ void DrawScanline(int y, int x1, int x2, Color color) {
 
 // Функція заливки трикутника за вершинами
 void FillTriangle(Vector2 v0, Vector2 v1, Vector2 v2, Color color) {
-    // Сортуємо вершини за y (v0.y <= v1.y <= v2.y)
+    // Сортуємо вершини по y (v0.y <= v1.y <= v2.y)
     Vector2 verts[3] = {v0, v1, v2};
     qsort(verts, 3, sizeof(Vector2), CompareY);
 
@@ -65,14 +65,18 @@ void FillTriangle(Vector2 v0, Vector2 v1, Vector2 v2, Color color) {
     v1 = verts[1];
     v2 = verts[2];
 
-    // Визначаємо довжини відрізків по y
+    // EPSILON - дуже мале число, що використовується для уникнення проблем
+    // з порівнянням чисел з плаваючою крапкою, особливо щоб уникнути
+    // ділення на нуль або обробки "плоских" трикутників, де висота надто мала.
+    const float EPSILON = 0.0001f;
+
+    // Визначаємо загальну висоту трикутника по y
     float total_height = v2.y - v0.y;
-    if (total_height == 0) return; // уникаємо ділення на 0
+    if (total_height < EPSILON) return; // Якщо висота дуже мала - вважаємо, що трикутник "плоский" і нічого не малюємо
 
     // Верхня частина трикутника
     float segment_height = v1.y - v0.y;
-    if (segment_height <= 0.0f) return;
-    if (segment_height > 0) {
+    if (segment_height > EPSILON) {
         for (int y = (int)ceilf(v0.y); y <= (int)floorf(v1.y); y++) {
             float alpha = (y - v0.y) / total_height;
             float beta = (y - v0.y) / segment_height;
@@ -84,8 +88,7 @@ void FillTriangle(Vector2 v0, Vector2 v1, Vector2 v2, Color color) {
 
     // Нижня частина трикутника
     segment_height = v2.y - v1.y;
-    if (segment_height <= 0.0f) return;
-    if (segment_height > 0) {
+    if (segment_height > EPSILON) {
         for (int y = (int)ceilf(v1.y); y <= (int)floorf(v2.y); y++) {
             float alpha = (y - v0.y) / total_height;
             float beta = (y - v1.y) / segment_height;
@@ -112,3 +115,4 @@ void DrawFilledTriangleRotated(Vector2 center, float size, float rotationDeg, Co
     FillTriangle(points[0], points[1], points[2], color);
     // DrawTriangle(points[2], points[1], points[0], color);
 }
+
