@@ -32,7 +32,7 @@ int main(void) {
 
         DrawRectangle(0, 0, osc_width, osc_height, BLACK); // Фон осцилографа
 
-        draw_grid(osc_width, osc_height); // Малювання сітки
+        draw_grid(osc_width, osc_height, 50, 49); // Малювання сітки
 
         EndDrawing();
     }
