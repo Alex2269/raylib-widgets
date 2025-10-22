@@ -124,14 +124,14 @@ static void draw_camSwitch(RasterFont font_knob, RasterFont font_value,
         float valueAtTick = minValue + (i / 100.0f) * (maxValue - minValue);
         char buf[16];
         if (maxValue < 10)
-            snprintf(buf, sizeof(buf), "%.1f", valueAtTick); // Формат з 1 десятою
-            else
-                snprintf(buf, sizeof(buf), "%.0f", valueAtTick); // Без десяткових
+            snprintf(buf, sizeof(buf), "%.1f", valueAtTick);
+        else
+            snprintf(buf, sizeof(buf), "%.0f", valueAtTick);
 
-                int charCount = utf8_strlen(buf);
+        int charCount = utf8_strlen(buf);
 
-            // Визначаємо позицію тексту для мітки, на відстані від ручки
-            float textRadius = innerRadius + (font_knob.glyph_width * charCount) / 2 + 4;
+        // Визначаємо позицію тексту для мітки, на відстані від ручки
+        float textRadius = innerRadius + (font_knob.glyph_width * charCount) / 2 + 4;
         Vector2 textPos = { center.x + cosf(tickRad) * textRadius, center.y + sinf(tickRad) * textRadius };
 
         float lineWidth = charCount * (font_knob.glyph_width + spacing) - spacing;
