@@ -172,6 +172,10 @@ void gui_control_panel(OscData *oscData, int screenWidth, int screenHeight) {
                                         Ch->trigger_edge,
                                         colorTriggerMode, 30, 5);
 
+    if (newSelection != Ch->trigger_edge) {
+        Ch->trigger_edge = newSelection;
+    }
+
     sliderY += spacingY /2 - 25;
 
     // Перемикач тестового сигналу
