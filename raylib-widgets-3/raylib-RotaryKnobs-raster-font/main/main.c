@@ -37,36 +37,35 @@ int main(void)
         ClearBackground(RAYWHITE); // Очищаємо фон білим кольором
 
         Gui_Knob_Channel(0, Terminus12x6_font, TerminusBold18x10_font, 600, 200,
-                        TextFormat("Масштабування%d\nпо вертикалі", (int)values[0] + 1),
+                        TextFormat("Масштабування 1", (int)values[0] + 1),
                         /*TextFormat("%0.1f", values[0])*/NULL,
                         knob_radius*2,
                         &values[0], 0.0f, 5.0f, true, YELLOW);
 
 
         Gui_Knob_Channel(1, Terminus12x6_font, TerminusBold18x10_font, 100 + knob_radius, 200,
-                        TextFormat("Масштабування%d\nпо вертикалі", (int)values[0] + 1),
+                        TextFormat("Масштабування 2", (int)values[1] + 1),
                         /*TextFormat("%0.1f", values[0])*/NULL,
                         knob_radius,
                         &values[1], 0.0f, 5.0f, true, WHITE);
 
         Gui_Knob_Channel(2, Terminus12x6_font, TerminusBold18x10_font, 300 + knob_radius, 200,
-                        TextFormat("Масштабування%d\nпо горизонталі", (int)values[1] + 1),
+                        TextFormat("Масштабування 3", (int)values[2] + 1),
                         /*TextFormat("%0.1f", values[1])*/NULL,
                         knob_radius,
                         &values[2], -20.0f, 20.0f, true, GREEN);
 
         Gui_Knob_Channel(3, Terminus12x6_font, TerminusBold18x10_font, 100 + knob_radius, 350,
-                        TextFormat("Масштабування%d\nпо вертикалі", (int)values[0] + 1),
+                        TextFormat("Масштабування 4", (int)values[3] + 1),
                         /*TextFormat("%0.1f", values[0])*/NULL,
                         knob_radius,
                         &values[3], -2.0f, 5.0f, true, DARKGREEN);
 
         Gui_Knob_Channel(4, Terminus12x6_font, TerminusBold18x10_font, 300 + knob_radius, 350,
-                        TextFormat("Масштабування%d\nпо горизонталі", (int)values[1] + 1),
+                        TextFormat("Масштабування 5", (int)values[4] + 1),
                         /*TextFormat("%0.1f", values[1])*/NULL,
                         knob_radius,
                         &values[4], -100.0f, 100.0f, true, SKYBLUE);
-
 
         EndDrawing(); // Завершуємо малювання кадру
     }
