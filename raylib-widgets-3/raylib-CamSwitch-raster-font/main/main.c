@@ -3,6 +3,7 @@
 #include "raylib.h"
 #include "cam_switch.h"
 #include <stdio.h>
+#include <math.h>
 
 #include "all_font.h" // Опис шрифтів як структури RasterFont
 #include "glyphs.h"
@@ -40,8 +41,10 @@ int main(void)
                         TextFormat("Масштабування 1", (int)values[0] + 1),
                         /*TextFormat("%0.1f", values[0])*/NULL,
                         knob_radius*2,
-                        &values[0], 0.0f, 5.0f, true, YELLOW);
+                        &values[0], 0.10f, 2.0f, true, YELLOW);
 
+        // values[0] = round(values[0] / 0.1) * 0.1;
+        printf("scale: %0.2f\n", values[0]);
 
         Gui_CamSwitch_Channel(1, Terminus12x6_font, TerminusBold18x10_font, 100 + knob_radius, 200,
                         TextFormat("Масштабування 2", (int)values[1] + 1),

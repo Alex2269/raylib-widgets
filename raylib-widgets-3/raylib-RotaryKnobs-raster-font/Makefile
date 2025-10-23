@@ -24,14 +24,14 @@ BUILD_CPP_DIR = $(BUILD_DIR)/cpp
 # Source directories
 SRC_DIRS =  main
 SRC_DIRS += fonts
-SRC_DIRS += knob_gui
+SRC_DIRS += gui
 SRC_DIRS += color_utils
 SRC_DIRS += glyphs
 
 # Include directories
 INC_DIRS =  main
 INC_DIRS += fonts
-INC_DIRS += knob_gui
+INC_DIRS += gui
 INC_DIRS += color_utils
 INC_DIRS += glyphs
 
