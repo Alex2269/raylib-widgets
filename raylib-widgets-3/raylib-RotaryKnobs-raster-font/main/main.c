@@ -3,6 +3,7 @@
 #include "raylib.h"
 #include "knob_gui.h"
 #include <stdio.h>
+#include <math.h>
 
 #include "all_font.h" // Опис шрифтів як структури RasterFont
 #include "glyphs.h"
@@ -36,12 +37,14 @@ int main(void)
         BeginDrawing();          // Починаємо малювання кадру
         ClearBackground(RAYWHITE); // Очищаємо фон білим кольором
 
-        Gui_Knob_Channel(0, Terminus12x6_font, TerminusBold18x10_font, 600, 200,
-                        TextFormat("Масштабування 1", (int)values[0] + 1),
-                        /*TextFormat("%0.1f", values[0])*/NULL,
-                        knob_radius*2,
-                        &values[0], 0.0f, 5.0f, true, YELLOW);
+        int Cam0 = Gui_Knob_Channel(0, Terminus12x6_font, TerminusBold18x10_font, 600, 200,
+                                    TextFormat("Масштабування 1", (int)values[0] + 1),
+                                    /*TextFormat("%0.1f", values[0])*/NULL,
+                                    knob_radius*2,
+                                    &values[0], 0.0f, 5.0f, true, YELLOW);
 
+        // Додавання цього рядку перетворює регулятор на дискретний перемикач
+        if(Cam0) values[0] = roundf(values[0] / 0.50f) * 0.50f; // кратність 0.50f
 
         Gui_Knob_Channel(1, Terminus12x6_font, TerminusBold18x10_font, 100 + knob_radius, 200,
                         TextFormat("Масштабування 2", (int)values[1] + 1),
