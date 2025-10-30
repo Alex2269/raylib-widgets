@@ -1,0 +1,159 @@
+// main-PSF2.c
+#include "raylib.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+
+// Магічні числа для PSF2 формату
+#define PSF2_MAGIC0 0x72
+#define PSF2_MAGIC1 0xB5
+#define PSF2_MAGIC2 0x4A
+#define PSF2_MAGIC3 0x86
+
+// Біт у flags, що означає наявність Unicode таблиці (не використовується у цьому прикладі)
+#define PSF2_HAS_UNICODE_TABLE 0x01
+
+// Структура заголовка PSF2 (little endian 4-байтові цілі)
+typedef struct {
+    uint8_t magic[4];       // Магічні байти: 0x72 0xB5 0x4A 0x86
+    uint32_t version;       // Версія формату (зазвичай 0)
+    uint32_t headersize;    // Розмір заголовка (зазвичай 32)
+    uint32_t flags;         // Прапори (наприклад, наявність Unicode таблиці)
+    uint32_t length;        // Кількість гліфів у шрифті
+    uint32_t charsize;      // Розмір одного гліфа в байтах
+    uint32_t height;        // Висота символу в пікселях
+    uint32_t width;         // Ширина символу в пікселях
+} PSF2_Header;
+
+// Структура шрифту PSF2 для зручності
+typedef struct {
+    PSF2_Header header;     // Заголовок шрифту
+    unsigned char* glyphBuffer; // Буфер з усіма гліфами
+} PSF2_Font;
+
+// Функція для читання 4-байтового little-endian цілого з файлу
+static uint32_t ReadLE32(FILE* f) {
+    uint8_t b[4];
+    fread(b, 1, 4, f);
+    return (uint32_t)b[0] | ((uint32_t)b[1] << 8) | ((uint32_t)b[2] << 16) | ((uint32_t)b[3] << 24);
+}
+
+// Функція завантаження PSF2 шрифту з файлу
+PSF2_Font LoadPSF2Font(const char* filename) {
+    FILE* f = fopen(filename, "rb");
+    if (!f) {
+        printf("Не вдалося відкрити файл шрифту: %s\n", filename);
+        exit(1);
+    }
+
+    PSF2_Header header;
+
+    // Читаємо магічні байти
+    fread(header.magic, 1, 4, f);
+    if (header.magic[0] != PSF2_MAGIC0 || header.magic[1] != PSF2_MAGIC1 ||
+        header.magic[2] != PSF2_MAGIC2 || header.magic[3] != PSF2_MAGIC3) {
+        printf("Файл не є валідним PSF2 шрифтом\n");
+        fclose(f);
+        exit(1);
+    }
+
+    // Читаємо інші поля заголовка (little endian)
+    header.version = ReadLE32(f);
+    header.headersize = ReadLE32(f);
+    header.flags = ReadLE32(f);
+    header.length = ReadLE32(f);
+    header.charsize = ReadLE32(f);
+    header.height = ReadLE32(f);
+    header.width = ReadLE32(f);
+
+    // Переміщаємося до початку гліфів (іноді заголовок може бути більшим)
+    fseek(f, header.headersize, SEEK_SET);
+
+    // Виділяємо пам'ять під всі гліфи
+    unsigned char* glyphBuffer = (unsigned char*)malloc(header.length * header.charsize);
+    if (!glyphBuffer) {
+        printf("Не вдалося виділити пам'ять під гліфи\n");
+        fclose(f);
+        exit(1);
+    }
+
+    fread(glyphBuffer, 1, header.length * header.charsize, f);
+    fclose(f);
+
+    PSF2_Font font = {header, glyphBuffer};
+    return font;
+}
+
+// Звільнення пам'яті шрифту
+void UnloadPSF2Font(PSF2_Font font) {
+    free(font.glyphBuffer);
+}
+
+// Малюємо один символ PSF2 шрифту у позиції (x,y) кольором color
+void DrawPSF2Char(PSF2_Font font, int x, int y, int c, Color color) {
+    if (c < 0 || c >= (int)font.header.length) return;
+
+    int width = font.header.width;
+    int height = font.header.height;
+    int bytes_per_row = (width + 7) / 8; // Кількість байтів в одному рядку символу
+    unsigned char* glyph = font.glyphBuffer + c * font.header.charsize;
+
+    // Проходимо по кожному рядку символу
+    for (int row = 0; row < height; row++) {
+        // Кожен рядок займає bytes_per_row байтів
+        for (int byte = 0; byte < bytes_per_row; byte++) {
+            unsigned char bits = glyph[row * bytes_per_row + byte];
+            // Проходимо по кожному біту в байті (пікселю)
+            for (int bit = 0; bit < 8; bit++) {
+                int px = byte * 8 + bit;
+                if (px >= width) break; // Не виходимо за ширину символу
+                // Якщо біт встановлений, малюємо піксель
+                if (bits & (0x80 >> bit)) {
+                    DrawPixel(x + px, y + row, color);
+                }
+            }
+        }
+    }
+}
+
+// Малюємо рядок тексту шрифтом PSF2
+void DrawPSF2Text(PSF2_Font font, int x, int y, const char* text, Color color) {
+    int xpos = x;
+    while (*text) {
+        DrawPSF2Char(font, xpos, y, (unsigned char)*text, color);
+        xpos += font.header.width; // Зсув по ширині символу
+        text++;
+    }
+}
+
+int main(void) {
+    const int screenWidth = 800;
+    const int screenHeight = 450;
+
+    InitWindow(screenWidth, screenHeight, "PSF2 Font with raylib");
+
+    // Завантажуємо PSF2 шрифт (потрібен файл font.psf2 у папці з програмою)
+    // PSF2_Font font = LoadPSF2Font("Uni3-Terminus20x10.psf");
+    // PSF2_Font font = LoadPSF2Font("Uni3-TerminusBold28x14.psf");
+    PSF2_Font font = LoadPSF2Font("Uni3-TerminusBold32x16.psf");
+
+
+    SetTargetFPS(60);
+
+    while (!WindowShouldClose()) {
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
+
+        // Виводимо текст шрифтом PSF2
+        // DrawPSF2Text(font, 20, 20, "Привіт, друже!", BLACK);
+        DrawPSF2Text(font, 20, 20, "Hello my friend!", BLACK);
+
+        EndDrawing();
+    }
+
+    UnloadPSF2Font(font);
+    CloseWindow();
+
+    return 0;
+}
+
