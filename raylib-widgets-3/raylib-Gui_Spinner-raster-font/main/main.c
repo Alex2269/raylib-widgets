@@ -6,8 +6,7 @@
 #include "gui_spinner.h"
 #include <stdio.h>
 
-
-int spacing = 2;
+int spacing = 2; // Відстань між символами
 
 // Приклади двох значень: ціле і з рухомою комою
 int intValue = 10;

@@ -6,8 +6,7 @@
 #include "gui_slider.h"
 #include <stdio.h>
 
-
-int spacing = 2;
+int spacing = 2; // Відстань між символами
 
 // Приклади двох значень: ціле і з рухомою комою
 int intValue = 10;
@@ -18,7 +17,7 @@ int intMin = 0, intMax = 100;
 float floatMin = 0.0f, floatMax = 100.0f;
 
 int main(void) {
-    InitWindow(600, 350, "Gui Spinner example (int and float)");
+    InitWindow(600, 350, "Gui_Slider example (int and float)");
 
     SetTargetFPS(60);
 
