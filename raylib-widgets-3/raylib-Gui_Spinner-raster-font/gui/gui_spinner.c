@@ -567,9 +567,9 @@ bool Gui_Spinner(int id, int centerX, int centerY, int width, int height,
     Color valFgColor = GetContrastingColor(valBgColor); // Контрастний колір для тексту
 
     // Малюємо фон-прямокутник
-    // DrawRectangleRec(valBgRect, valBgColor);
+    DrawRectangleRec(valBgRect, valBgColor);
     // Малюємо рамку навколо прямокутника (контрастною)
-    // DrawRectangleLinesEx(valBgRect, 1, valFgColor);
+    DrawRectangleLinesEx(valBgRect, 1, valFgColor);
 
     // Малюємо текст, спроєктований у центр прямокутника
     int textDrawX = (int)(valBgRect.x + padX);
