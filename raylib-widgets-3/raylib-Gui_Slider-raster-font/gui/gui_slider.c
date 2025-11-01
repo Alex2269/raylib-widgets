@@ -1,3 +1,5 @@
+// gui_slider.c
+
 #include "gui_slider.h"
 #include <stdio.h>
 #include <string.h>
@@ -62,15 +64,16 @@ static void DrawSlider(Rectangle bounds, float normPos, Color baseColor) {
     DrawRectangleRec(bounds, Fade(baseColor, 0.25f));
     // Заповнення слайдера відповідно до поточного значення
     DrawRectangle(bounds.x, bounds.y, normPos * bounds.width, bounds.height, Fade(baseColor, 0.5f));
-    DrawRectangleLinesEx(bounds, 1, GetContrastingColor(baseColor)); // Рамка
+    // При бажанні - розкоментувати фонову рамку
+    // DrawRectangleLinesEx(bounds, 1, GetContrastingColor(baseColor)); // Фонова рамка
 
     // Можна домалювати ручку слайдера (по центру заповнення)
     float knobX = bounds.x + normPos * bounds.width;
     float knobW = 10, knobH = bounds.height;
     Rectangle knobRect = {knobX - knobW / 2, bounds.y, knobW, knobH};
     // При бажанні - розкоментувати для видимості ручки
-    DrawRectangleRec(knobRect, GetContrastingColor(baseColor));
-    DrawRectangleLinesEx(knobRect, 1, baseColor);
+    // DrawRectangleRec(knobRect, GetContrastingColor(baseColor));
+    // DrawRectangleLinesEx(knobRect, 1, baseColor);
 }
 
 /**
