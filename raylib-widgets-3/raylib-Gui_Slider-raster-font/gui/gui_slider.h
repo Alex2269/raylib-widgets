@@ -14,6 +14,11 @@ typedef enum {
     GUI_SLIDER_FLOAT
 } GuiSliderValueType;
 
+typedef enum {
+    GUI_SLIDER_HORIZONTAL,
+    GUI_SLIDER_VERTICAL
+} GuiSliderOrientation;
+
 /**
  * Основна функція віджета слайдера (підтримка int чи float).
  * Малює слайдер і обробляє зміну значення через перетягування та колесо миші.
@@ -36,7 +41,9 @@ bool Gui_Slider(int id, int centerX, int centerY, int width, int height,
                 const char* textLeft, const char* textRight,
                 void* value, void* minValue, void* maxValue,
                 float step, GuiSliderValueType valueType,
+                GuiSliderOrientation orientation,
                 Color baseColor, RasterFont font, int spacing);
+
 
 #endif // GUI_SLIDER_H
 

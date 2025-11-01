@@ -127,25 +127,49 @@ static void UpdateSliderValue(Rectangle bounds, void* value, void* minVal, void*
 }
 
 /**
- * Функція віджета слайдера з відображенням і взаємодією.
- * Підтримує typen int/float, зміну значення через перетягування і колесо миші.
+ * Основна функція віджета слайдера, з підтримкою горизонтальної та вертикальної орієнтації.
+ *
+ * @param id - Ідентифікатор віджета для збереження стану.
+ * @param centerX, centerY - Координати центру слайдера.
+ * @param width, height - Розмір області слайдера.
+ * @param textLeft, textRight - Тексти над кнопками (можна NULL).
+ * @param value - Вказівник на число, яке редагується.
+ * @param minValue, maxValue - Вказівники на мінімальне та максимально допустиме значення.
+ * @param step - Крок зміни.
+ * @param valueType - Тип значення (int або float).
+ * @param orientation - Горизонтальний або вертикальний.
+ * @param baseColor - Основний колір.
+ * @param font - Шрифт.
+ * @param spacing - Відстань між символами.
+ *
+ * @return true, якщо значення змінилося.
  */
 bool Gui_Slider(int id, int centerX, int centerY, int width, int height,
                 const char* textLeft, const char* textRight,
                 void* value, void* minValue, void* maxValue,
                 float step, GuiSliderValueType valueType,
+                GuiSliderOrientation orientation,
                 Color baseColor, RasterFont font, int spacing)
 {
-    // Перевірка валідності id і вказівника
-    if (id < 0 || id >= MAX_SLIDERS || !value) return false;
+    if (id < 0 || id >= 16 || !value) return false; // Перевірка валідності
 
-    bool changed = false; // Прапорець, чи було змінено значення
+    bool changed = false;
 
-    // Обчислення позиції прямокутника слайдера (повна ширина без кнопок)
+    // Обчислюємо верхній лівий кут залежно від орієнтації
+    int posX = centerX - width / 2;
     int posY = centerY - height / 2;
-    Rectangle sliderRect = {(float)(centerX - width / 2), (float)posY, (float)width, (float)height};
 
-    // Обрахунок нормалізованого значення від 0 до 1 для поточного value
+    Rectangle sliderRect;
+
+    if (orientation == GUI_SLIDER_HORIZONTAL) {
+        // Горизонтальна орієнтація
+        sliderRect = (Rectangle){(float)posX, (float)posY, (float)width, (float)height};
+    } else {
+        // Вертикальна орієнтація - ширина і висота міняються місцями
+        sliderRect = (Rectangle){(float)posX, (float)posY, (float)height, (float)width};
+    }
+
+    // Обчислюємо нормальне значення (0..1)
     float normVal = 0.0f;
     if (valueType == GUI_SLIDER_FLOAT) {
         float v = *(float*)value;
@@ -156,23 +180,50 @@ bool Gui_Slider(int id, int centerX, int centerY, int width, int height,
         int v = *(int*)value;
         int minV = *(int*)minValue;
         int maxV = *(int*)maxValue;
-        normVal = (maxV == minV) ? 0.0f : ((float)(v - minV) / (float)(maxV - minV));
+        normVal = (maxV == minV) ? 0.0f : ((float)(v - minV) / (maxV - minV));
     }
+
+    // Обмежуємо межі
     if (normVal < 0) normVal = 0;
     if (normVal > 1) normVal = 1;
 
-    // Малюємо слайдер з відображенням рівня заповнення
-    DrawSlider(sliderRect, normVal, baseColor);
+    if (orientation == GUI_SLIDER_VERTICAL) {
+        posX = centerX - height / 2;
+        posY = centerY - width / 2;
+        sliderRect = (Rectangle){ (float)posX, (float)posY, (float)height, (float)width };
+    } else {
+        posX = centerX - width / 2;
+        posY = centerY - height / 2;
+        sliderRect = (Rectangle){ (float)posX, (float)posY, (float)width, (float)height };
+    }
 
-    // Отримуємо внутрішній стан "активності" слайдера за прямокутником
+    // Малюємо слайдер згідно з орієнтацією
+    if (orientation == GUI_SLIDER_HORIZONTAL) {
+        DrawSlider(sliderRect, normVal, baseColor);
+    } else {
+        // Вертикальний слайдер - заповнення знизу вгору
+        DrawRectangleRec(sliderRect, Fade(baseColor, 0.25f));
+        float fillHeight = normVal * sliderRect.height;
+        DrawRectangle(sliderRect.x, sliderRect.y + sliderRect.height - fillHeight,
+                      sliderRect.width, fillHeight, Fade(baseColor, 0.5f));
+
+        // Малюємо ручку на рівні заповнення
+        float knobY = sliderRect.y + sliderRect.height - fillHeight;
+        float knobW = sliderRect.width;
+        float knobH = 4;
+        Rectangle knobRect = {sliderRect.x, knobY - knobH/2, knobW, knobH};
+        // Можна додати малювання ручки, якщо потрібно
+        // DrawRectangleRec(knobRect, GetContrastingColor(baseColor));
+    }
+
+    // Отримуємо стан активності (перетягування)
     bool *isActive = GetSliderActiveState(sliderRect);
-    if (!isActive) return false; // Якщо максимальна кількість слайдерів перевищена
+    if (!isActive) return false;
 
-    // Отримуємо позицію миші і перевіряємо, чи наведена миша на слайдер
     Vector2 mousePos = GetMousePosition();
     bool mouseOver = CheckCollisionPointRec(mousePos, sliderRect);
 
-    // Зміна значення колесом миші, якщо курсор на слайдері
+    // Обробка колеса миші
     if (mouseOver) {
         int wheelMove = GetMouseWheelMove();
         if (wheelMove != 0) {
@@ -183,7 +234,6 @@ bool Gui_Slider(int id, int centerX, int centerY, int width, int height,
                 *v += step * wheelMove;
                 if (*v > maxV) *v = maxV;
                 if (*v < minV) *v = minV;
-                changed = true;
             } else {
                 int* v = (int*)value;
                 int maxV = *(int*)maxValue;
@@ -191,72 +241,106 @@ bool Gui_Slider(int id, int centerX, int centerY, int width, int height,
                 *v += (int)(step) * wheelMove;
                 if (*v > maxV) *v = maxV;
                 if (*v < minV) *v = minV;
-                changed = true;
             }
+            changed = true;
         }
     }
 
-    // Якщо натиснуто ліву кнопку миші на слайдері - активуємо перетягування
+    // Початок перетягування
     if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && mouseOver) {
         *isActive = true;
     }
-    // Якщо відпущено кнопку миші - відключаємо перетягування
+    // Завершення перетягування
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON)) {
         *isActive = false;
     }
 
-    // Якщо слайдер утримується (перетягується)
+    // Оновлюємо значення, коли перетягуємо
     if (*isActive) {
         bool valueChanged = false;
-        if (valueType == GUI_SLIDER_FLOAT) {
-            float oldVal = *(float*)value;
+        if (orientation == GUI_SLIDER_HORIZONTAL) {
+            // Горизонтальне оновлення
+            float oldVal = (valueType == GUI_SLIDER_FLOAT) ? *(float*)value : 0;
+            int oldValInt = (valueType == GUI_SLIDER_INT) ? *(int*)value : 0;
             UpdateSliderValue(sliderRect, value, minValue, maxValue, step, valueType);
-            if (oldVal != *(float*)value) valueChanged = true;
+            if (valueType == GUI_SLIDER_FLOAT && *(float*)value != oldVal) valueChanged = true;
+            if (valueType == GUI_SLIDER_INT && *(int*)value != oldValInt) valueChanged = true;
         } else {
-            int oldVal = *(int*)value;
-            UpdateSliderValue(sliderRect, value, minValue, maxValue, step, valueType);
-            if (oldVal != *(int*)value) valueChanged = true;
+            // Вертикальне оновлення: враховуємо інвертовану ось
+            float norm = 1.0f - (mousePos.y - sliderRect.y) / sliderRect.height;
+            if (norm < 0) norm = 0;
+            if (norm > 1) norm = 1;
+
+            if (valueType == GUI_SLIDER_FLOAT) {
+                float minV = *(float*)minValue;
+                float maxV = *(float*)maxValue;
+                float rawVal = minV + norm * (maxV - minV);
+                float steppedVal = minV + step * roundf((rawVal - minV) / step);
+                if (steppedVal < minV) steppedVal = minV;
+                if (steppedVal > maxV) steppedVal = maxV;
+                if (steppedVal != *(float*)value) {
+                    *(float*)value = steppedVal;
+                    valueChanged = true;
+                }
+            } else {
+                int minV = *(int*)minValue;
+                int maxV = *(int*)maxValue;
+                int range = maxV - minV;
+                int rawVal = minV + (int)(norm * range);
+                int stepInt = (int)(step + 0.5f);
+                if (stepInt == 0) stepInt = 1;
+                int steppedVal = minV + ((rawVal - minV + stepInt / 2) / stepInt) * stepInt;
+                if (steppedVal < minV) steppedVal = minV;
+                if (steppedVal > maxV) steppedVal = maxV;
+                if (steppedVal != *(int*)value) {
+                    *(int*)value = steppedVal;
+                    valueChanged = true;
+                }
+            }
         }
         if (valueChanged) changed = true;
     }
 
-    // Відображення поточного значення зверху по центру слайдера
+    // Відображення поточного значення
     char valStr[32];
     if (valueType == GUI_SLIDER_FLOAT)
         snprintf(valStr, sizeof(valStr), "%.2f", *(float*)value);
     else
         snprintf(valStr, sizeof(valStr), "%d", *(int*)value);
 
+    // Обчислюємо позицію для тексту
     int textLen = 0;
-    for (const char* p = valStr; *p; p++) if (((*p) & 0xC0) != 0x80) textLen++;
+    for (const char *p=valStr; *p; p++) if (((*p) & 0xC0) != 0x80) textLen++;
     int textWidth = textLen * (font.glyph_width + spacing) - spacing;
     int textHeight = font.glyph_height;
 
     float centerXf = sliderRect.x + sliderRect.width / 2.0f;
     float centerYf = sliderRect.y + sliderRect.height / 2.0f;
 
-    const int padX = 8;
-    const int padY = 4;
+    const int padX = 8; // Відступ зліва/зправа
+    const int padY = 4; // Відступ зверху/знизу
 
     Rectangle valBgRect = {
-        centerXf - (textWidth / 2.0f) - padX,
-        centerYf - (textHeight / 2.0f) - padY,
-        textWidth + 2 * padX,
-        textHeight + 2 * padY
+        // Центруємо текст по горизонталі та вертикалі
+        (float)(centerXf - textWidth / 2 - padX),
+        (float)(centerYf - textHeight / 2 - padY),
+        (float)(textWidth + 2 * padX),
+        (float)(textHeight + 2 * padY)
     };
 
+    // Малюємо фон для значення
     Color valBgColor = Fade(baseColor, 0.2f);
     Color valFgColor = GetContrastingColor(valBgColor);
 
-    // За бажанням можна розкоментувати фон і рамку тексту
+    // Можна розкоментувати для візуалізації
     // DrawRectangleRec(valBgRect, valBgColor);
     // DrawRectangleLinesEx(valBgRect, 1, valFgColor);
 
+    // Відображення тексту
     int textDrawX = (int)(valBgRect.x + padX);
     int textDrawY = (int)(valBgRect.y + padY);
-
     DrawTextScaled(font, textDrawX, textDrawY, valStr, spacing, 1, valFgColor);
 
-    return changed;
+    return changed; // Повертає true якщо значення змінилося
 }
 

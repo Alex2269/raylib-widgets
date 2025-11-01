@@ -11,8 +11,9 @@ int spacing = 2; // Відстань між символами
 // Приклади двох значень: ціле і з рухомою комою
 int intValue = 10;
 float floatValue = 25.5f;
+float floatValue2 = 25.5f;
 
-// Мінімальні і максимальні значення для int і float спінерів
+// Мінімальні і максимальні значення для int і float слайдерів
 int intMin = 0, intMax = 100;
 float floatMin = 0.0f, floatMax = 100.0f;
 
@@ -25,15 +26,23 @@ int main(void) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
-        // Спінер для int (крок 1)
-        bool changedInt = Gui_Slider(0, 300, 100, 320, 40, "Менше", "Більше",
+        // Слайдер для int (крок 1)
+        bool changedInt = Gui_Slider(0, 300, 100, 320, 40, NULL, NULL,
                                       &intValue, &intMin, &intMax,
-                                      1, GUI_SLIDER_INT, BLUE, TerminusBold24x12_font, spacing);
+                                      1, GUI_SLIDER_INT, GUI_SLIDER_HORIZONTAL,
+                                      BLUE, TerminusBold24x12_font, spacing);
 
-        // Спінер для float (крок 0.25)
-        bool changedFloat = Gui_Slider(1, 300, 200, 320, 40, "Менше", "Більше",
-                                        &floatValue, &floatMin, &floatMax,
-                                        0.25f, GUI_SLIDER_FLOAT, GREEN, TerminusBold24x12_font, spacing);
+        // Слайдер для float (крок 0.25)
+        bool changedFloat = Gui_Slider(1, 300, 200, 320, 40, NULL, NULL,
+                                       &floatValue, &floatMin, &floatMax,
+                                       0.25f, GUI_SLIDER_FLOAT, GUI_SLIDER_HORIZONTAL,
+                                       GREEN, TerminusBold24x12_font, spacing);
+
+        // Слайдер для float (крок 0.25)
+        bool changedFloat2 = Gui_Slider(2, 30, 175, 320, 20, NULL, NULL,
+                                       &floatValue2, &floatMin, &floatMax,
+                                       0.25f, GUI_SLIDER_FLOAT, GUI_SLIDER_VERTICAL,
+                                       GREEN, TerminusBold24x12_font, spacing);
 
         // Відображення інформації вгорі
         char text[64];
