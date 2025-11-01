@@ -450,6 +450,108 @@ bool Gui_Spinner(int id, int centerX, int centerY, int width, int height,
         if (valueChanged) changed = true;
     }
 
-    return changed;
+
+    // ==============================================================================
+    // Малювання текстів над кнопками (якщо вони задані)
+    // ==============================================================================
+    int pad = 6; // Відступ для тексту всередині рамки
+
+    // Текст над лівою кнопкою
+    if (textLeft && textLeft[0]) {
+        // Підрахунок кількості кодових точок UTF-8 для правильного виміру ширини тексту
+        int len = 0;
+        for (const char *p = textLeft; *p; p++) if (((*p)&0xC0)!=0x80) len++;
+
+        float textWidth = len * (font.glyph_width + spacing) - spacing;
+        float boxW = textWidth + 2*pad;
+        float boxH = font.glyph_height + 2*pad;
+
+        // Позиція рамки з текстом над лівою кнопкою
+        Rectangle rLeft = {
+            leftBtn.x + leftBtn.width/2.0f - boxW/2.0f,
+            leftBtn.y - boxH - 8, // Відступ вгору від кнопки
+            boxW,
+            boxH
+        };
+        Color bg = Fade(GetContrastingColor(baseColor), 0.9f); // Фон рамки
+        Color fg = GetContrastingColor(bg); // Колір тексту
+        DrawRectangleRec(rLeft, bg);
+        DrawRectangleLinesEx(rLeft, 1, fg);
+        DrawTextScaled(font, (int)(rLeft.x + pad), (int)(rLeft.y + pad/2), textLeft, spacing, 1, fg);
+    }
+
+    // Текст над правою кнопкою
+    if (textRight && textRight[0]) {
+        // Підрахунок кількості кодових точок UTF-8
+        int len = 0;
+        for (const char *p = textRight; *p; p++) if (((*p)&0xC0)!=0x80) len++;
+
+        float textWidth = len * (font.glyph_width + spacing) - spacing;
+        float boxW = textWidth + 2*pad;
+        float boxH = font.glyph_height + 2*pad;
+
+        // Позиція рамки з текстом над правою кнопкою
+        Rectangle rRight = {
+            rightBtn.x + rightBtn.width/2.0f - boxW/2.0f,
+            rightBtn.y - boxH - 8,
+            boxW,
+            boxH
+        };
+        Color bg = Fade(GetContrastingColor(baseColor), 0.9f);
+        Color fg = GetContrastingColor(bg);
+        DrawRectangleRec(rRight, bg);
+        DrawRectangleLinesEx(rRight, 1, fg);
+        DrawTextScaled(font, (int)(rRight.x + pad), (int)(rRight.y + pad/2), textRight, spacing, 1, fg);
+    }
+
+    // ==============================================================================
+    // Відображення текстового рядка з поточним значенням у центрі слайдера
+    // ==============================================================================
+    char valStr[32]; // Буфер для форматованого значення
+    if(valueType == GUI_SPINNER_FLOAT)
+        snprintf(valStr, sizeof(valStr), "%.2f", *(float*)value); // Форматування float
+        else
+            snprintf(valStr, sizeof(valStr), "%d", *(int*)value);     // Форматування int
+
+            // Обчислюємо ширину і висоту тексту у пікселях для центрування
+            int textLen = 0;
+        for(const char* p = valStr; *p; p++) if(((*p) & 0xC0) != 0x80) textLen++;
+        int textWidth = textLen * (font.glyph_width + spacing) - spacing;
+    int textHeight = font.glyph_height;
+
+    // Центр слайдера по X та Y для позиціонування тексту
+    centerX = spinnerRect.x + spinnerRect.width / 2.0f;
+    centerY = spinnerRect.y + spinnerRect.height / 2.0f;
+
+    // Відступи навколо тексту в прямокутнику фону (padding)
+    const int padX = 8;
+    const int padY = 4;
+
+    // Обчислюємо координати прямокутника фону так, щоб текст лежав по центру слайдера
+    Rectangle valBgRect = {
+        centerX - (textWidth / 2.0f) - padX,
+        centerY - (textHeight / 2.0f) - padY,
+        textWidth + 2*padX,
+        textHeight + 2*padY
+    };
+
+    // Колір фону для відображення значення з напівпрозорістю
+    Color valBgColor = Fade(baseColor, 0.2f);
+    Color valFgColor = GetContrastingColor(valBgColor); // Контрастний колір для тексту
+
+    // Малюємо фон-прямокутник
+    // DrawRectangleRec(valBgRect, valBgColor);
+    // Малюємо рамку навколо прямокутника (контрастною)
+    // DrawRectangleLinesEx(valBgRect, 1, valFgColor);
+
+    // Малюємо текст, спроєктований у центр прямокутника
+    int textDrawX = (int)(valBgRect.x + padX);
+    int textDrawY = (int)(valBgRect.y + padY);
+
+    DrawTextScaled(font, textDrawX, textDrawY, valStr, spacing, 1, valFgColor);
+
+    return changed; // Повертаємо true, якщо значення спінера змінилося
 }
+
+
 
