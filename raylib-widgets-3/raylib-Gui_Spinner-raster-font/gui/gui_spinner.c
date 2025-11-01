@@ -6,6 +6,7 @@
 #include <time.h>
 #include <math.h>
 
+// Структура для збереження стану утримання кнопки (автоповтор при тривалому натисканні)
 typedef struct {
     bool isHeld;            // Чи наразі кнопка утримується
     double holdStartTime;   // Час початку утримання
@@ -43,6 +44,7 @@ static double GetSystemTime() {
     return (double)ts.tv_sec + ts.tv_nsec / 1e9;
 }
 
+// Повернути контрастний колір (чорний або білий) залежно від яскравості кольору
 static Color GetContrastingColor(Color c) {
     float luminance = 0.2126f * c.r / 255 + 0.7152f * c.g / 255 + 0.0722f * c.b / 255;
     return (luminance > 0.5f) ? BLACK : WHITE;
@@ -169,6 +171,7 @@ static bool ArrowButton(Rectangle bounds, ArrowDirectionExtended dir,
     bool mouseOver = CheckCollisionPointRec(mousePos, bounds);
     bool changed = false;
 
+    // Визначаємо колір кнопки в залежності від стану миші
     Color btnColor = baseColor;
     if (mouseOver) btnColor = Fade(baseColor, 0.8f);
     if (mouseOver && IsMouseButtonDown(MOUSE_LEFT_BUTTON)) btnColor = Fade(baseColor, 0.6f);
@@ -176,9 +179,10 @@ static bool ArrowButton(Rectangle bounds, ArrowDirectionExtended dir,
     Color borderColor = GetContrastingColor(btnColor);
     const int borderThickness = 2;
 
+    // Малюємо кнопку
     DrawRectangleLinesEx((Rectangle){bounds.x - borderThickness, bounds.y - borderThickness,
-        bounds.width + 2 * borderThickness, bounds.height + 2 * borderThickness},
-        borderThickness, borderColor);
+                                     bounds.width + 2 * borderThickness, bounds.height + 2 * borderThickness},
+                                     borderThickness, borderColor);
     DrawRectangleRec(bounds, btnColor);
 
     // Визначення напрямку стрілки залежно від орієнтації та кнопки
@@ -194,6 +198,7 @@ static bool ArrowButton(Rectangle bounds, ArrowDirectionExtended dir,
 
     double now = GetSystemTime();
 
+    // Якщо кнопка не утримується, ініціалізуємо часові змінні
     if (!holdState->isHeld) {
         holdState->lastUpdateTime = now;
         holdState->accumulatedTime = 0.0;
@@ -214,16 +219,20 @@ static bool ArrowButton(Rectangle bounds, ArrowDirectionExtended dir,
         holdState->isHeld = true;
         holdState->holdStartTime = now;
         holdState->accumulatedTime = 0.0;
+
+        // Виконуємо перший крок зміни відповідно до напряму стрілки
         if (dir == ARROW_RIGHT)
             changed = IncrementValue(value, minVal, maxVal, step, valueType);
         else
             changed = DecrementValue(value, minVal, maxVal, step, valueType);
     }
     else if (mouseDown && holdState->isHeld) {
+        // Логіка автоповтору при утриманні кнопки із прискоренням
         double holdDuration = now - holdState->holdStartTime;
         double interval = baseInterval;
 
         if (holdDuration > delayBeforeAccel) {
+            // Зменшуємо інтервал для прискорення
             double accelTime = holdDuration - delayBeforeAccel;
             interval = baseInterval - accelTime * accelRate;
             if (interval < minInterval) interval = minInterval;
@@ -231,6 +240,7 @@ static bool ArrowButton(Rectangle bounds, ArrowDirectionExtended dir,
 
         holdState->accumulatedTime += deltaTime;
 
+        // Виконуємо кроки, поки накопичений час перевищує інтервал
         while (holdState->accumulatedTime >= interval) {
             holdState->accumulatedTime -= interval;
             if (dir == ARROW_RIGHT)
@@ -239,6 +249,7 @@ static bool ArrowButton(Rectangle bounds, ArrowDirectionExtended dir,
                 changed = DecrementValue(value, minVal, maxVal, step, valueType) || changed;
         }
     } else {
+        // Кнопка відпущена, скидаємо стан утримання
         holdState->isHeld = false;
         holdState->accumulatedTime = 0.0;
     }
@@ -252,11 +263,12 @@ static void DrawSpinner(Rectangle bounds, float normPos, Color baseColor, GuiSpi
         DrawRectangle(bounds.x, bounds.y, normPos * bounds.width, bounds.height, Fade(baseColor, 0.5f));
         DrawRectangleLinesEx(bounds, 1, GetContrastingColor(baseColor));
 
-        float knobX = bounds.x + normPos * bounds.width;
-        float knobW = 10, knobH = bounds.height;
-        Rectangle knobRect = {knobX - knobW / 2, bounds.y, knobW, knobH};
-        DrawRectangleRec(knobRect, GetContrastingColor(baseColor));
-        DrawRectangleLinesEx(knobRect, 1, baseColor);
+    // Ручка слайдера
+    float knobX = bounds.x + normPos * bounds.width;
+    float knobW = 10, knobH = bounds.height;
+    Rectangle knobRect = {knobX - knobW / 2, bounds.y, knobW, knobH};
+    DrawRectangleRec(knobRect, GetContrastingColor(baseColor));
+    DrawRectangleLinesEx(knobRect, 1, baseColor);
     } else {
         DrawRectangleRec(bounds, Fade(baseColor, 0.25f));
         float fillHeight = normPos * bounds.height;
@@ -292,23 +304,32 @@ static void UpdateSpinnerValue(Rectangle bounds, void* value, void* minVal, void
         float range = maxV - minV;
         float rawVal = minV + norm * range;
         float steppedVal = minV + step * roundf((rawVal - minV) / step);
+
+        // Обмеження в межах [minV, maxV]
         if (steppedVal < minV) steppedVal = minV;
         if (steppedVal > maxV) steppedVal = maxV;
+
         *(float*)value = steppedVal;
     } else {
         int minV = *(int*)minVal;
         int maxV = *(int*)maxVal;
         int range = maxV - minV;
+
+        // Розрахунок цілочисельного значення з кроком
         int rawVal = minV + (int)(norm * range);
         int stepInt = (int)(step + 0.5f);
         if (stepInt == 0) stepInt = 1;
-        int steppedVal = minV + ((rawVal - minV + stepInt / 2) / stepInt) * stepInt;
+        int steppedVal = minV + ((rawVal - minV + stepInt/2) / stepInt) * stepInt;
+
+        // Обмеження у межах [minV, maxV]
         if (steppedVal < minV) steppedVal = minV;
         if (steppedVal > maxV) steppedVal = maxV;
+
         *(int*)value = steppedVal;
     }
 }
 
+// Структура для збереження стану окремого слайдера
 typedef struct {
     Rectangle bounds;
     bool isActive;
@@ -329,6 +350,7 @@ static bool* GetSpinnerActiveState(Rectangle bounds) {
             return &spinnersState[i].isActive;
         }
     }
+    // Помилка: перевищено максимальну кількість спінерів
     return NULL;
 }
 
@@ -340,8 +362,10 @@ bool Gui_Spinner(int id, int centerX, int centerY, int width, int height,
                  GuiSpinnerOrientation orientation,
                  Color baseColor, RasterFont font, int spacing)
 {
+    // Перевірка на валідність ID та наявності вказівника на значення
     if (id < 0 || id >= MAX_SPINNERS || !value) return false;
 
+    // Отримання станів утримання для лівої та правої кнопок за ID
     HoldState* holdLeft = &holdLeftStates[id];
     HoldState* holdRight = &holdRightStates[id];
 
@@ -394,6 +418,7 @@ bool Gui_Spinner(int id, int centerX, int centerY, int width, int height,
         int maxV = *(int*)maxValue;
         normVal = (maxV == minV) ? 0.0f : ((float)(v - minV) / (float)(maxV - minV));
     }
+    // Обмеження нормалізованого значення в діапазоні [0, 1]
     if (normVal < 0) normVal = 0;
     if (normVal > 1) normVal = 1;
 
@@ -405,19 +430,20 @@ bool Gui_Spinner(int id, int centerX, int centerY, int width, int height,
     Vector2 mousePos = GetMousePosition();
     bool mouseOver = CheckCollisionPointRec(mousePos, spinnerRect);
 
+    // Зміна значення колесом миші при наведенні на слайдер
     if (mouseOver) {
         int wheelMove = GetMouseWheelMove();
         if (wheelMove != 0) {
             float delta = step * wheelMove;
             if (valueType == GUI_SPINNER_FLOAT) {
-                float* v = (float*)value;
+                float *v = (float*)value;
                 float maxV = *(float*)maxValue;
                 float minV = *(float*)minValue;
                 *v += delta;
                 if (*v > maxV) *v = maxV;
                 if (*v < minV) *v = minV;
             } else {
-                int* v = (int*)value;
+                int *v = (int*)value;
                 int maxV = *(int*)maxValue;
                 int minV = *(int*)minValue;
                 int stepInt = (int)(step + 0.5f);
@@ -436,7 +462,9 @@ bool Gui_Spinner(int id, int centerX, int centerY, int width, int height,
     if (IsMouseButtonReleased(MOUSE_LEFT_BUTTON))
         *isActive = false;
 
+    // Якщо слайдер тягнеться — оновлюємо значення
     if (*isActive) {
+        // Запам'ятовуємо старе значення, щоб визначити, чи дійсно воно змінилося
         bool valueChanged = false;
         if (valueType == GUI_SPINNER_FLOAT) {
             float oldVal = *(float*)value;
@@ -449,7 +477,6 @@ bool Gui_Spinner(int id, int centerX, int centerY, int width, int height,
         }
         if (valueChanged) changed = true;
     }
-
 
     // ==============================================================================
     // Малювання текстів над кнопками (якщо вони задані)
@@ -510,13 +537,13 @@ bool Gui_Spinner(int id, int centerX, int centerY, int width, int height,
     char valStr[32]; // Буфер для форматованого значення
     if(valueType == GUI_SPINNER_FLOAT)
         snprintf(valStr, sizeof(valStr), "%.2f", *(float*)value); // Форматування float
-        else
-            snprintf(valStr, sizeof(valStr), "%d", *(int*)value);     // Форматування int
+    else
+        snprintf(valStr, sizeof(valStr), "%d", *(int*)value);     // Форматування int
 
-            // Обчислюємо ширину і висоту тексту у пікселях для центрування
-            int textLen = 0;
-        for(const char* p = valStr; *p; p++) if(((*p) & 0xC0) != 0x80) textLen++;
-        int textWidth = textLen * (font.glyph_width + spacing) - spacing;
+    // Обчислюємо ширину і висоту тексту у пікселях для центрування
+    int textLen = 0;
+    for(const char* p = valStr; *p; p++) if(((*p) & 0xC0) != 0x80) textLen++;
+    int textWidth = textLen * (font.glyph_width + spacing) - spacing;
     int textHeight = font.glyph_height;
 
     // Центр слайдера по X та Y для позиціонування тексту
