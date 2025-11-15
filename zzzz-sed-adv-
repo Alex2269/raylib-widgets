@@ -1,0 +1,48 @@
+#!/bin/sh
+
+DIR="$1"
+
+if [ -z "$DIR" ]; then
+  echo "Usage: $0 <directory>"
+  exit 1
+fi
+
+# Перевіряємо, що це дійсно директорія
+if [ ! -d "$DIR" ]; then
+  echo "Error: $DIR is not a directory"
+  exit 1
+fi
+
+replace() {
+  # Виконуємо заміну у файлі, шлях передається повністю
+#   sed -i s/'font\.width'/'font.glyph_width'/g "$1"
+#   sed -i s/'font\.height'/'font.glyph_height'/g "$1"
+#   sed -i s/'font\.charcount'/'font.glyph_count'/g "$1"
+#   sed -i s/'font\.charsize'/'font.glyph_bytes'/g "$1"
+
+#   sed -i s/'font18\.width'/'font18.glyph_width'/g "$1"
+#   sed -i s/'font18\.height'/'font18.glyph_height'/g "$1"
+#   sed -i s/'font18\.charcount'/'font18.glyph_count'/g "$1"
+#   sed -i s/'font18\.charsize'/'font18.glyph_bytes'/g "$1"
+
+  sed -i s/'GetContrastColor'/'GetContrastColor'/g "$1"
+  sed -i s/'GetContrastInvertColor'/'GetContrastInvertColor'/g "$1"
+
+#   sed -i s/'height'/'glyph_height'/g "$1"
+#   sed -i s/'charcount'/'glyph_count'/g "$1"
+#   sed -i s/'charsize'/'glyph_bytes'/g "$1"
+
+#   sed -i 's|#include "font.h"|#include "glyphs.h"|g' "$1"
+
+  # sed -i s/' width'/' glyph_width'/g "$1"
+  # sed -i s/' height'/' glyph_height'/g "$1"
+  # sed -i s/' charcount'/' glyph_count'/g "$1"
+  # sed -i s/' charsize'/' glyph_bytes'/g "$1"
+  # При потребі додайте інші заміни
+}
+
+# Проходимо рекурсивно по всіх файлах
+find "$DIR" -type f | while read -r file; do
+  replace "$file"
+done
+

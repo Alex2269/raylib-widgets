@@ -1,0 +1,77 @@
+// main.c
+
+#include "raylib.h"
+#include "guicheckbox.h"
+#include <stdio.h>
+#include <math.h>
+
+#include "all_font.h" // Опис шрифтів як структури RasterFont
+#include "glyphs.h"
+
+// int fontSize = 24;   // Розмір шрифту для тексту
+int LineSpacing = 0; // Міжрядковий інтервал (0 - стандартний)
+int spacing = 2; // Відступ між символами, той самий, що передається у DrawPSFText
+
+int main(void)
+{
+    const int screenWidth = 800;  // Ширина вікна
+    const int screenHeight = 450; // Висота вікна
+
+    // Встановлюємо прапорець для мультисемплінгу (покращення якості графіки)
+    SetConfigFlags(FLAG_MSAA_4X_HINT);
+
+    // Ініціалізуємо вікно з назвою
+    InitWindow(screenWidth, screenHeight, "Raylib Knob Example");
+
+    // Встановлюємо цільову частоту кадрів
+    SetTargetFPS(60);
+
+    // Масив станів перемикачів
+    bool flag[4] = { 0, 0, 0, 0 };
+
+    float knob_radius = 44.0f; // Радіус регуляторів
+
+    // Основний цикл програми, виконується поки вікно не закриють
+    while (!WindowShouldClose())
+    {
+        BeginDrawing();          // Починаємо малювання кадру
+        ClearBackground(RAYWHITE); // Очищаємо фон білим кольором
+
+        int sliderX = 50;
+        int sliderY = 200;
+
+        // Перемикач 1
+        Gui_CheckBox((Rectangle){sliderX, sliderY, 30, 30},
+                     &flag[0],
+                     TerminusBold24x12_font ,"Тестовий\nсигнал", NULL, DARKGRAY);
+
+        // Перемикач 2
+        Gui_CheckBox((Rectangle){sliderX + 40, sliderY, 30, 30},
+                     &flag[1],
+                     TerminusBold24x12_font ,"Прокручування\nсигналу\nMovement", NULL, DARKGRAY);
+
+        // Перемикач 3
+        Gui_CheckBox((Rectangle){sliderX+80, sliderY, 30, 30},
+                     &flag[2],
+                     TerminusBold24x12_font ,"Реверс\nсигналу", NULL, DARKGRAY);
+
+        // Перемикач 4
+        Gui_CheckBox((Rectangle){sliderX+120, sliderY, 30, 30},
+                     &flag[3],
+                     TerminusBold24x12_font ,"Динамічний\nбуфер\npoints_to_display",
+                     /*TextFormat(": %d",oscData->points_to_display)*/NULL, DARKGRAY);
+
+
+        DrawTextScaled(TerminusBold24x12_font, 50, 20,
+                       TextFormat(":%d :%d :%d :%d\n", flag[0],flag[1],flag[2],flag[3]),
+                       spacing, 1, BLACK);
+
+        EndDrawing(); // Завершуємо малювання кадру
+    }
+
+    // Закриваємо вікно і звільняємо ресурси
+    CloseWindow();
+
+    return 0;
+}
+
